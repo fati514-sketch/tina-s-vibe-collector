@@ -1,0 +1,11 @@
+{
+  "name": "vibe-collector",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Vibe Collector 单页灵感策展应用",
+  "scripts": {
+    "check:github": "node scripts/check-github-safe.mjs",
+    "dev": "node serve.mjs",
+    "start": "node serve.mjs"
+  }
+}

@@ -1,0 +1,1342 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vibe Collector</title>
+    <meta
+      name="description"
+      content="Vibe Collector 是一款面向视觉创作者、编辑与品牌策划的高定极简灵感管理工具。"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              paper: "#F9F9F8",
+              chalk: "#FAFAFA",
+              ink: "#111111",
+              mist: "#E6E3DF",
+              pebble: "#D9D7D2",
+              smoke: "#A4A19B",
+            },
+            fontFamily: {
+              display: ["Playfair Display", "serif"],
+              sans: ["Inter", "sans-serif"],
+            },
+            boxShadow: {
+              soft: "0 22px 60px rgba(17, 17, 17, 0.08)",
+              panel: "0 30px 90px rgba(17, 17, 17, 0.14)",
+              float: "0 18px 45px rgba(17, 17, 17, 0.12)",
+            },
+            keyframes: {
+              fadeUp: {
+                "0%": { opacity: 0, transform: "translateY(18px)" },
+                "100%": { opacity: 1, transform: "translateY(0)" },
+              },
+              fadeIn: {
+                "0%": { opacity: 0 },
+                "100%": { opacity: 1 },
+              },
+              slowFloat: {
+                "0%, 100%": { transform: "translateY(0px)" },
+                "50%": { transform: "translateY(-5px)" },
+              },
+            },
+            animation: {
+              fadeUp: "fadeUp 0.8s cubic-bezier(0.22, 1, 0.36, 1) both",
+              fadeIn: "fadeIn 0.35s ease both",
+              slowFloat: "slowFloat 6s ease-in-out infinite",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      :root {
+        color-scheme: light;
+        --paper: #f9f9f8;
+        --ink: #111111;
+        --mist: #e6e3df;
+        --shadow: rgba(17, 17, 17, 0.14);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--ink);
+        font-family: Inter, sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(255, 255, 255, 0.96), transparent 34%),
+          radial-gradient(circle at 85% 0%, rgba(234, 230, 225, 0.5), transparent 32%),
+          linear-gradient(180deg, #fcfcfb 0%, #f7f5f2 42%, #fafaf9 100%);
+        overflow-x: hidden;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.26;
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.34) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.34) 1px, transparent 1px);
+        background-size: 42px 42px;
+        mask-image: radial-gradient(circle at center, black 30%, transparent 88%);
+      }
+
+      ::selection {
+        background: rgba(17, 17, 17, 0.12);
+      }
+
+      ::-webkit-scrollbar {
+        width: 10px;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: rgba(17, 17, 17, 0.16);
+        border-radius: 999px;
+      }
+
+      .masonry-grid {
+        column-gap: 1.5rem;
+      }
+
+      .masonry-item {
+        break-inside: avoid;
+        margin-bottom: 1.5rem;
+      }
+
+      .glass-panel {
+        background: rgba(249, 249, 248, 0.66);
+        backdrop-filter: blur(18px);
+      }
+
+      .grain-card {
+        position: relative;
+        isolation: isolate;
+      }
+
+      .grain-card::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.12;
+        background-image:
+          radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.2), transparent 14%),
+          radial-gradient(circle at 78% 30%, rgba(255, 255, 255, 0.16), transparent 16%);
+        mix-blend-mode: screen;
+      }
+
+      .backdrop-fade {
+        animation: fadeIn 0.3s ease both;
+      }
+
+      .modal-rise {
+        animation: fadeUp 0.46s cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+
+      .copy-flash {
+        animation: slowFloat 1.3s ease;
+      }
+
+      @media (min-width: 768px) {
+        .masonry-grid {
+          column-gap: 1.75rem;
+        }
+
+        .masonry-item {
+          margin-bottom: 1.75rem;
+        }
+      }
+
+      @media (min-width: 1280px) {
+        .masonry-grid {
+          column-gap: 2rem;
+        }
+
+        .masonry-item {
+          margin-bottom: 2rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script>
+      window.react = window.React;
+    </script>
+    <script src="https://unpkg.com/lucide-react@0.453.0/dist/umd/lucide-react.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script type="text/babel" data-presets="react">
+      const {
+        Upload,
+        X,
+        Copy,
+        Check,
+        Sparkles,
+        Download,
+        ImagePlus,
+        ArrowUpRight,
+        ScanSearch,
+        WandSparkles,
+        LoaderCircle,
+        RefreshCcw,
+      } = window.LucideReact;
+
+      const { useEffect, useMemo, useRef, useState, useDeferredValue } = React;
+      const { jsPDF } = window.jspdf;
+
+      const FILTERS = ["全部", "时尚", "编辑大片", "日常Vlog", "AI生成"];
+
+      const SEED_ITEMS = [
+        {
+          id: "edit-01",
+          category: "编辑大片",
+          title: "Quiet Satin Direction",
+          description:
+            "冷白闪光与浅色缎面共同塑造出克制而高级的画面气质，适合作为品牌企划首页的定调参考，安静却很有张力。",
+          tags: ["#冷调", "#静奢", "#柔光"],
+          colors: ["#E7E2DA", "#C9C1B7", "#8A8D93", "#171A1F"],
+          image:
+            "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=1200&q=80",
+          ratio: "4 / 5",
+          scene: "缎面材质与冷光人像",
+          usage: "适合作为品牌大片开场参考",
+        },
+        {
+          id: "fash-02",
+          category: "时尚",
+          title: "Monochrome Street Poise",
+          description:
+            "利落外套、低饱和街景与克制姿态组合出很强的现代时装感，适合做 lookbook 节奏和穿搭构图参考。",
+          tags: ["#城市极简", "#利落线条", "#低饱和"],
+          colors: ["#F2EFE8", "#D3CEC7", "#8F8A84", "#24262A"],
+          image:
+            "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1200&q=80",
+          ratio: "4 / 6",
+          scene: "都市剪裁与结构对比",
+          usage: "适合作为穿搭手册参考",
+        },
+        {
+          id: "vlog-03",
+          category: "日常Vlog",
+          title: "Morning Cream Palette",
+          description:
+            "奶油色调和自然光线让画面既亲近又精致，很适合作为日常内容、自拍选题或生活方式账号的灵感样板。",
+          tags: ["#晨间奶油调", "#生活感", "#自然人像"],
+          colors: ["#F7F2EA", "#DACAB9", "#B39A86", "#302B28"],
+          image:
+            "https://images.unsplash.com/photo-1495385794356-15371f348c31?auto=format&fit=crop&w=1200&q=80",
+          ratio: "4 / 5",
+          scene: "暖白自然光生活抓拍",
+          usage: "适合作为日常内容开场图",
+        },
+        {
+          id: "ai-04",
+          category: "AI生成",
+          title: "Future Silk Echo",
+          description:
+            "带有未来质感的人像语言，干净、轻微失真、又保留了时装大片的安静氛围，适合做 AI 概念视觉参考。",
+          tags: ["#未来肤感", "#银灰气质", "#合成美学"],
+          colors: ["#EFEDE8", "#D2D0D1", "#898E98", "#1C2028"],
+          image:
+            "https://images.unsplash.com/photo-1504593811423-6dd665756598?auto=format&fit=crop&w=1200&q=80",
+          ratio: "5 / 7",
+          scene: "柔化金属与高光肌理",
+          usage: "适合作为 AI 概念提案参考",
+        },
+        {
+          id: "edit-05",
+          category: "编辑大片",
+          title: "Archive White Space",
+          description:
+            "留白非常充足，构图安静克制，适合用于封面页、过渡页或需要高级停顿感的企划版式。",
+          tags: ["#复古留白", "#静止感", "#封面气质"],
+          colors: ["#FBF8F2", "#DDD8D1", "#9C958D", "#222222"],
+          image:
+            "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1200&q=80",
+          ratio: "4 / 5",
+          scene: "极简封面式构图",
+          usage: "适合作为杂志封面氛围",
+        },
+        {
+          id: "fash-06",
+          category: "时尚",
+          title: "Black Knit Gesture",
+          description:
+            "近距离裁切与针织质感强化了人物存在感，整体情绪直接、冷静，很适合做时尚人像和细节页参考。",
+          tags: ["#黑色肌理", "#近景肖像", "#安静力量"],
+          colors: ["#E8E1D8", "#B9B4AE", "#666A72", "#121316"],
+          image:
+            "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=1200&q=80",
+          ratio: "3 / 4",
+          scene: "近景人像与针织纹理",
+          usage: "适合作为美妆时尚内页参考",
+        },
+        {
+          id: "vlog-07",
+          category: "日常Vlog",
+          title: "Off-Duty Mirror Study",
+          description:
+            "镜面自拍的生活感和穿搭统一度都很强，既亲切又不失审美控制，适合作为博主日常风格板。",
+          tags: ["#镜面自拍", "#下班穿搭", "#中性色衣橱"],
+          colors: ["#F3EDE4", "#CFC0AF", "#8D7B68", "#24211D"],
+          image:
+            "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=1200&q=80",
+          ratio: "4 / 6",
+          scene: "镜面记录与色调穿搭",
+          usage: "适合作为生活方式内容参考",
+        },
+        {
+          id: "ai-08",
+          category: "AI生成",
+          title: "Soft Chrome Dream",
+          description:
+            "具有轻微非真实感的未来视觉，肤感与光线都被处理得很干净，适合放进 AI 视觉概念版中做情绪锚点。",
+          tags: ["#未来静物感", "#AI美学", "#雾面肌理"],
+          colors: ["#F4F4F0", "#D7D7D2", "#8C9199", "#20242B"],
+          image:
+            "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=1200&q=80",
+          ratio: "4 / 5",
+          scene: "合成质感高级人像",
+          usage: "适合作为概念板主视觉",
+        },
+        {
+          id: "edit-09",
+          category: "编辑大片",
+          title: "Porcelain Window Light",
+          description:
+            "柔和窗边光和克制色调共同形成很耐看的高级人像氛围，适合编辑大片、护肤视觉和品牌质感提案。",
+          tags: ["#瓷感肤色", "#窗边柔光", "#经典气质"],
+          colors: ["#FCF7F2", "#E1D8CD", "#A79C92", "#2A2928"],
+          image:
+            "https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=1200&q=80",
+          ratio: "4 / 5",
+          scene: "窗边高质感肤色研究",
+          usage: "适合作为美妆编辑参考",
+        },
+        {
+          id: "fash-10",
+          category: "时尚",
+          title: "Linear Coat Composition",
+          description:
+            "长线条廓形和冷静中性色穿搭让整体画面非常利落，适合做外套类目、秋冬企划和造型陈列参考。",
+          tags: ["#长线条廓形", "#冷静中性", "#秀场便装感"],
+          colors: ["#F3F0EA", "#CEC9C1", "#908E8D", "#18191B"],
+          image:
+            "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=1200&q=80",
+          ratio: "4 / 6",
+          scene: "冷光中的剪裁动态",
+          usage: "适合作为外套企划氛围",
+        },
+        {
+          id: "vlog-11",
+          category: "日常Vlog",
+          title: "Muted Weekend Self-Portrait",
+          description:
+            "柔和阴影与基础款质地让自拍显得自然又有审美统一度，适合作为周末记录、生活方式或穿搭账号参考。",
+          tags: ["#周末自拍", "#柔和阴影", "#基础款质感"],
+          colors: ["#F5F1EA", "#D4C8BB", "#9B8B7B", "#302C28"],
+          image:
+            "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80",
+          ratio: "4 / 5",
+          scene: "柔影个人日记式画面",
+          usage: "适合作为创作者日记参考",
+        },
+        {
+          id: "ai-12",
+          category: "AI生成",
+          title: "Editorial Silence 02",
+          description:
+            "低饱和渐层与干净皮肤质感让这张图同时具备未来感和编辑感，适合放入 AI 视觉实验系列。",
+          tags: ["#编辑AI", "#玻璃肌", "#低饱和未来"],
+          colors: ["#F0EEE9", "#D7D2CC", "#8B8B91", "#171A1E"],
+          image:
+            "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=1200&q=80",
+          ratio: "4 / 5",
+          scene: "AI风格肤感与色调研究",
+          usage: "适合作为合成概念提案",
+        },
+      ];
+
+      const FALLBACK_TAG_SETS = [
+        ["#柔光", "#静奢", "#低饱和"],
+        ["#冷调", "#现代气质", "#视觉日记"],
+        ["#奶油光", "#干净肤感", "#编辑感"],
+        ["#克制边缘", "#镜面氛围", "#极简静帧"],
+      ];
+
+      const FALLBACK_PALETTES = [
+        ["#F4F0EA", "#D5CCC2", "#9E9488", "#1C1C1C"],
+        ["#F7F5F1", "#E0DAD3", "#98979D", "#1E2228"],
+        ["#EEE7DE", "#C8B5A0", "#8F857A", "#232120"],
+        ["#FBFAF7", "#D9D7D2", "#B2ACA6", "#151515"],
+      ];
+
+      const CATEGORY_USAGE = {
+        时尚: "适合作为时尚造型参考",
+        编辑大片: "适合作为品牌企划与杂志情绪锚点",
+        日常Vlog: "适合作为创作者日常内容参考",
+        AI生成: "适合作为概念板创新视觉参考",
+      };
+
+      const toastDuration = 2200;
+
+      const titleFromString = (value = "") =>
+        value
+          .replace(/\.[^/.]+$/, "")
+          .replace(/[-_]+/g, " ")
+          .replace(/\b\w/g, (char) => char.toUpperCase())
+          .trim() || "Collected Reference";
+
+      const createFallbackAnalysis = (label, index = 0) => ({
+        title: titleFromString(label),
+        category: FILTERS.slice(1)[index % (FILTERS.length - 1)],
+        moodDescription:
+          "整体画面以克制色调和柔和层次为主，具备较强的情绪策展潜力，适合作为高级感情绪板的基础参考。",
+        tags: FALLBACK_TAG_SETS[index % FALLBACK_TAG_SETS.length],
+        palette: FALLBACK_PALETTES[index % FALLBACK_PALETTES.length],
+        provider: "本地兜底",
+        model: "本地风格生成",
+      });
+
+      const withItemDefaults = (item) => ({
+        ...item,
+        title: item.title || "Collected Reference",
+        category: item.category || "编辑大片",
+        description: item.description || item.moodDescription || "精炼的视觉情绪分析。",
+        moodDescription: item.moodDescription || item.description || "精炼的视觉情绪分析。",
+        tags: item.tags || ["#静奢", "#低饱和", "#编辑感"],
+        colors: item.colors || item.palette || ["#F5F1EA", "#D7CEC3", "#9B948D", "#1C1C1C"],
+        ratio: item.ratio || "4 / 5",
+        scene: item.scene || "情绪板参考图",
+        usage: item.usage || CATEGORY_USAGE[item.category] || "适合作为品牌企划参考",
+        analysisSource: item.analysisSource || "策展样片",
+        analysisProvider: item.analysisProvider || "Vibe Collector 片库",
+      });
+
+      const fileToDataUrl = (file) =>
+        new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result));
+          reader.onerror = () => reject(new Error("读取图片文件失败"));
+          reader.readAsDataURL(file);
+        });
+
+      function App() {
+        const [activeFilter, setActiveFilter] = useState("全部");
+        const deferredFilter = useDeferredValue(activeFilter);
+        const [items, setItems] = useState(SEED_ITEMS.map((item) => withItemDefaults(item)));
+        const [selectedItem, setSelectedItem] = useState(null);
+        const [uploadOpen, setUploadOpen] = useState(false);
+        const [uploadDrafts, setUploadDrafts] = useState([]);
+        const [dragOver, setDragOver] = useState(false);
+        const [isAnalyzing, setIsAnalyzing] = useState(false);
+        const [activeUploadId, setActiveUploadId] = useState("");
+        const [uploadProgressText, setUploadProgressText] = useState("");
+        const [isRefreshingSelected, setIsRefreshingSelected] = useState(false);
+        const [minimaxReady, setMinimaxReady] = useState(null);
+        const [toasts, setToasts] = useState([]);
+        const [copiedColor, setCopiedColor] = useState("");
+        const fileInputRef = useRef(null);
+
+        const galleryItems = useMemo(() => {
+          if (deferredFilter === "全部") {
+            return items;
+          }
+
+          return items.filter((item) => item.category === deferredFilter);
+        }, [items, deferredFilter]);
+
+        const filterCounts = useMemo(() => {
+          return FILTERS.reduce((acc, filter) => {
+            acc[filter] = filter === "全部" ? items.length : items.filter((item) => item.category === filter).length;
+            return acc;
+          }, {});
+        }, [items]);
+
+        const minimaxCount = useMemo(
+          () => items.filter((item) => item.analysisSource === "MiniMax").length,
+          [items]
+        );
+
+        useEffect(() => {
+          const handleEscape = (event) => {
+            if (event.key === "Escape") {
+              setSelectedItem(null);
+              setUploadOpen(false);
+              setUploadDrafts([]);
+              setDragOver(false);
+            }
+          };
+
+          window.addEventListener("keydown", handleEscape);
+          return () => window.removeEventListener("keydown", handleEscape);
+        }, []);
+
+        useEffect(() => {
+          let cancelled = false;
+
+          const loadHealth = async () => {
+            try {
+              const response = await fetch("/api/health");
+              const data = await response.json();
+              if (!cancelled) {
+                setMinimaxReady(Boolean(data.minimaxConfigured));
+              }
+            } catch (error) {
+              if (!cancelled) {
+                setMinimaxReady(false);
+              }
+            }
+          };
+
+          loadHealth();
+
+          return () => {
+            cancelled = true;
+          };
+        }, []);
+
+        const showToast = (message) => {
+          const id = `${Date.now()}-${Math.random()}`;
+          setToasts((current) => [...current, { id, message }]);
+          window.setTimeout(() => {
+            setToasts((current) => current.filter((toast) => toast.id !== id));
+          }, toastDuration);
+        };
+
+        const copyText = async (value) => {
+          try {
+            if (navigator.clipboard && window.isSecureContext) {
+              await navigator.clipboard.writeText(value);
+            } else {
+              const input = document.createElement("textarea");
+              input.value = value;
+              input.style.position = "fixed";
+              input.style.opacity = "0";
+              document.body.appendChild(input);
+              input.focus();
+              input.select();
+              document.execCommand("copy");
+              document.body.removeChild(input);
+            }
+
+            setCopiedColor(value);
+            showToast(`${value} 已复制到剪贴板`);
+            window.setTimeout(() => setCopiedColor(""), 1200);
+          } catch (error) {
+            showToast("当前环境暂不支持复制");
+          }
+        };
+
+        const updateItemInState = (itemId, nextItem) => {
+          const safeItem = withItemDefaults(nextItem);
+          setItems((current) => current.map((item) => (item.id === itemId ? safeItem : item)));
+          setSelectedItem((current) => (current && current.id === itemId ? safeItem : current));
+        };
+
+        const refreshMiniMaxStatus = async () => {
+          try {
+            const response = await fetch("/api/health");
+            const data = await response.json();
+            const ready = Boolean(data.minimaxConfigured);
+            setMinimaxReady(ready);
+            return ready;
+          } catch (error) {
+            setMinimaxReady(false);
+            return false;
+          }
+        };
+
+        const requestMiniMaxAnalysis = async (payload) => {
+          const response = await fetch("/api/analyze", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
+
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(data.error || "MiniMax 分析失败");
+          }
+
+          return data;
+        };
+
+        const applyAnalysisToItem = (item, analysis) =>
+          withItemDefaults({
+            ...item,
+            title: analysis.title || item.title,
+            category: analysis.category || item.category,
+            description: analysis.moodDescription || item.description,
+            moodDescription: analysis.moodDescription || item.moodDescription || item.description,
+            tags: analysis.tags || item.tags,
+            colors: analysis.palette || analysis.colors || item.colors,
+            usage: CATEGORY_USAGE[analysis.category] || item.usage,
+            analysisSource: analysis.provider === "MiniMax" ? "MiniMax" : item.analysisSource,
+            analysisProvider:
+              analysis.provider === "MiniMax"
+                ? `${analysis.provider} ${analysis.model || ""}`.trim()
+                : item.analysisProvider,
+          });
+
+        const handleRefreshSelected = async () => {
+          if (!selectedItem || isRefreshingSelected) {
+            return;
+          }
+
+          setIsRefreshingSelected(true);
+
+          try {
+            const payload = selectedItem.sourceDataUrl
+              ? {
+                  imageDataUrl: selectedItem.sourceDataUrl,
+                  filename: selectedItem.sourceFilename || selectedItem.title,
+                }
+              : {
+                  imageUrl: selectedItem.image,
+                  filename: selectedItem.title,
+                };
+
+            const analysis = await requestMiniMaxAnalysis(payload);
+            const nextItem = applyAnalysisToItem(selectedItem, analysis);
+            updateItemInState(selectedItem.id, nextItem);
+            showToast("MiniMax 分析已刷新");
+          } catch (error) {
+            showToast(error.message || "MiniMax 分析失败");
+          } finally {
+            setIsRefreshingSelected(false);
+          }
+        };
+
+        const pickFiles = (fileList) => {
+          const nextDrafts = Array.from(fileList || [])
+            .filter((file) => file.type.startsWith("image/"))
+            .map((file, index) =>
+              withItemDefaults({
+                localId: `${file.name}-${file.size}-${Date.now()}-${index}`,
+                file,
+                preview: URL.createObjectURL(file),
+                title: titleFromString(file.name),
+                category: "编辑大片",
+                description: "等待 MiniMax 分析。",
+                moodDescription: "等待 MiniMax 分析。",
+                tags: FALLBACK_TAG_SETS[index % FALLBACK_TAG_SETS.length],
+                colors: FALLBACK_PALETTES[index % FALLBACK_PALETTES.length],
+                ratio: "4 / 5",
+                scene: "用户上传灵感图",
+                usage: "适合作为新增灵感插入",
+                analysisSource: "等待分析",
+                analysisProvider: "等待中",
+              })
+            );
+
+          if (!nextDrafts.length) {
+            showToast("请选择图片文件后再上传");
+            return;
+          }
+
+          setUploadDrafts((current) => [...current, ...nextDrafts]);
+        };
+
+        const handleUploadConfirm = async () => {
+          if (!uploadDrafts.length) {
+            showToast("请先选择至少一张图片");
+            return;
+          }
+
+          const serviceReady = minimaxReady === false ? await refreshMiniMaxStatus() : true;
+          if (!serviceReady) {
+            showToast("本地服务尚未配置 MiniMax Key");
+            return;
+          }
+
+          setIsAnalyzing(true);
+          let successCount = 0;
+          const createdItems = [];
+
+          try {
+            for (let index = 0; index < uploadDrafts.length; index += 1) {
+              const draft = uploadDrafts[index];
+              setActiveUploadId(draft.localId);
+              setUploadProgressText(`正在分析 ${index + 1} / ${uploadDrafts.length}`);
+
+              try {
+                const imageDataUrl = await fileToDataUrl(draft.file);
+                const analysis = await requestMiniMaxAnalysis({
+                  imageDataUrl,
+                  filename: draft.file.name,
+                });
+
+                createdItems.push(
+                  applyAnalysisToItem(
+                    {
+                      ...draft,
+                      id: `upl-${Date.now()}-${index}`,
+                      image: draft.preview,
+                      sourceDataUrl: imageDataUrl,
+                      sourceFilename: draft.file.name,
+                      analysisSource: "MiniMax",
+                      analysisProvider: `${analysis.provider} ${analysis.model || ""}`.trim(),
+                    },
+                    analysis
+                  )
+                );
+                successCount += 1;
+              } catch (error) {
+                const fallback = createFallbackAnalysis(draft.file.name, index);
+                createdItems.push(
+                  applyAnalysisToItem(
+                    {
+                      ...draft,
+                      id: `upl-${Date.now()}-${index}`,
+                      image: draft.preview,
+                      sourceFilename: draft.file.name,
+                      analysisSource: "本地兜底",
+                      analysisProvider: "本地风格兜底",
+                    },
+                    fallback
+                  )
+                );
+                showToast(`${draft.title}：${error.message || "分析失败，已启用本地兜底"}`);
+              }
+            }
+
+            setItems((current) => [...createdItems, ...current]);
+            setUploadOpen(false);
+            setUploadDrafts([]);
+            setUploadProgressText("");
+            showToast(
+              successCount === uploadDrafts.length
+                ? `已添加 ${successCount} 张灵感图，并完成 MiniMax 分析`
+                : `已添加 ${createdItems.length} 张灵感图，其中 ${successCount} 张完成 MiniMax 分析`
+            );
+          } finally {
+            setIsAnalyzing(false);
+            setActiveUploadId("");
+            setUploadProgressText("");
+          }
+        };
+
+        const handleExportBrief = (item) => {
+          const doc = new jsPDF({
+            orientation: "portrait",
+            unit: "pt",
+            format: "a4",
+          });
+
+          const pageWidth = doc.internal.pageSize.getWidth();
+          const margin = 46;
+          const textMaxWidth = pageWidth - margin * 2;
+
+          const hexToRgb = (hex) => {
+            const cleaned = hex.replace("#", "");
+            const normalized =
+              cleaned.length === 3
+                ? cleaned
+                    .split("")
+                    .map((char) => char + char)
+                    .join("")
+                : cleaned;
+            const numeric = parseInt(normalized, 16);
+            return {
+              r: (numeric >> 16) & 255,
+              g: (numeric >> 8) & 255,
+              b: numeric & 255,
+            };
+          };
+
+          doc.setFillColor(17, 17, 17);
+          doc.rect(0, 0, pageWidth, 94, "F");
+          doc.setTextColor(255, 255, 255);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(24);
+          doc.text("Vibe Collector 企划简报", margin, 58);
+
+          doc.setTextColor(17, 17, 17);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(28);
+          doc.text(item.title, margin, 142);
+
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(11);
+          doc.setTextColor(88, 88, 88);
+          doc.text(`分类：${item.category}`, margin, 167);
+          doc.text(`场景：${item.scene}`, margin + 160, 167);
+
+          doc.setTextColor(17, 17, 17);
+          doc.setFontSize(13);
+          const descriptionLines = doc.splitTextToSize(item.description, textMaxWidth);
+          doc.text(descriptionLines, margin, 214);
+
+          const tagText = item.tags.join("   ");
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(12);
+          doc.text("AI 视觉标签", margin, 296);
+          doc.setFont("helvetica", "normal");
+          doc.text(tagText, margin, 318);
+
+          doc.setFont("helvetica", "bold");
+          doc.text("提取色卡", margin, 378);
+
+          item.colors.forEach((color, index) => {
+            const rgb = hexToRgb(color);
+            const y = 420 + index * 46;
+            doc.setFillColor(rgb.r, rgb.g, rgb.b);
+            doc.roundedRect(margin, y - 15, 18, 18, 4, 4, "F");
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(17, 17, 17);
+            doc.text(color, margin + 34, y - 1);
+          });
+
+          doc.setFont("helvetica", "bold");
+          doc.text("推荐用途", margin, 620);
+          doc.setFont("helvetica", "normal");
+          doc.text(item.usage, margin, 643);
+
+          doc.setDrawColor(225, 225, 225);
+          doc.line(margin, 682, pageWidth - margin, 682);
+          doc.setFontSize(10);
+          doc.setTextColor(112, 112, 112);
+          doc.text("由 Vibe Collector 生成的前端企划简报", margin, 710);
+
+          const safeName = item.title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+          doc.save(`vibe-collector-${safeName}.pdf`);
+          showToast("企划简报已导出为 PDF");
+        };
+
+        const removeDraft = (localId) => {
+          setUploadDrafts((current) => {
+            const target = current.find((draft) => draft.localId === localId);
+            if (target) {
+              URL.revokeObjectURL(target.preview);
+            }
+            return current.filter((draft) => draft.localId !== localId);
+          });
+        };
+
+        return (
+          <div className="relative min-h-screen">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[34rem] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.95),transparent_58%)]" />
+
+            <header className="sticky top-0 z-30">
+              <div className="mx-auto max-w-[1500px] px-4 pt-4 md:px-8 md:pt-6 xl:px-12">
+                <div className="glass-panel rounded-[1.75rem] px-5 py-4 shadow-soft ring-1 ring-black/5 md:px-7 md:py-5">
+                  <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <div className="h-2.5 w-2.5 rounded-full bg-ink" />
+                        <span className="text-[0.68rem] uppercase tracking-[0.34em] text-black/50">
+                          灵感策展系统
+                        </span>
+                      </div>
+                      <div>
+                        <div className="font-display text-[1.95rem] tracking-[0.02em] text-ink md:text-[2.35rem]">
+                          Vibe Collector
+                        </div>
+                        <p className="mt-2 max-w-2xl text-sm leading-6 text-black/60 md:text-[0.98rem]">
+                          在拍摄开始之前，先把情绪、肌理与视觉节奏整理成一套可执行的灵感系统。
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setUploadOpen(true)}
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 text-sm font-medium text-white transition duration-300 ease-in-out hover:-translate-y-0.5 hover:bg-black hover:shadow-float"
+                    >
+                      <Upload size={16} strokeWidth={1.9} />
+                      上传灵感图
+                    </button>
+                  </div>
+
+                  <div className="mt-6 flex flex-wrap items-center gap-2 md:gap-3">
+                    <div className="mr-2 inline-flex items-center gap-2 text-[0.7rem] uppercase tracking-[0.3em] text-black/40">
+                      <ScanSearch size={14} strokeWidth={1.8} />
+                      筛选
+                    </div>
+
+                    {FILTERS.map((filter) => {
+                      const isActive = activeFilter === filter;
+                      return (
+                        <button
+                          key={filter}
+                          type="button"
+                          onClick={() => React.startTransition(() => setActiveFilter(filter))}
+                          className={`rounded-full px-4 py-2 text-sm transition duration-300 ease-in-out ${
+                            isActive
+                              ? "bg-ink text-white shadow-soft"
+                              : "bg-white/70 text-black/65 ring-1 ring-black/5 hover:bg-white hover:text-ink"
+                          }`}
+                        >
+                          <span>{filter}</span>
+                          <span className={`ml-2 text-[0.72rem] ${isActive ? "text-white/70" : "text-black/35"}`}>
+                            {filterCounts[filter]}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </header>
+
+            <main className="mx-auto max-w-[1500px] px-4 pb-24 pt-10 md:px-8 md:pt-14 xl:px-12">
+              <section className="animate-fadeUp">
+                <div className="grid gap-12 lg:grid-cols-[minmax(0,1.2fr)_minmax(300px,0.8fr)] lg:items-end">
+                  <div className="space-y-6">
+                    <p className="text-[0.72rem] uppercase tracking-[0.36em] text-black/45">高定极简灵感档案</p>
+                    <h1 className="max-w-4xl font-display text-[3rem] leading-[0.95] tracking-[-0.03em] text-ink sm:text-[4.2rem] md:text-[5.4rem]">
+                      先收藏情绪
+                      <br />
+                      再决定画面。
+                    </h1>
+                  </div>
+
+                  <div className="glass-panel rounded-[1.75rem] p-6 shadow-soft ring-1 ring-black/5 md:p-7">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <div className="text-[0.72rem] uppercase tracking-[0.3em] text-black/40">当前看板</div>
+                        <p className="mt-3 text-sm leading-6 text-black/62">
+                          当前共收录 {galleryItems.length} 张灵感参考，其中 {minimaxCount} 张已完成 MiniMax 实时分析，可直接用于色卡整理与企划输出。
+                        </p>
+                      </div>
+                      <div className="rounded-full bg-black/5 p-3 text-black/75">
+                        <WandSparkles size={18} strokeWidth={1.8} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section className="mt-12 md:mt-16">
+                {galleryItems.length ? (
+                  <div className="masonry-grid columns-1 sm:columns-2 lg:columns-3 xl:columns-4">
+                    {galleryItems.map((item, index) => (
+                      <article key={item.id} className="masonry-item animate-fadeUp" style={{ animationDelay: `${index * 40}ms` }}>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedItem(item)}
+                          className="group grain-card block w-full overflow-hidden rounded-[1.9rem] bg-white/70 text-left shadow-[0_1px_0_rgba(17,17,17,0.04)] transition duration-500 ease-in-out hover:-translate-y-1 hover:shadow-float focus:outline-none focus:ring-2 focus:ring-black/20"
+                        >
+                          <div className="relative w-full" style={{ aspectRatio: item.ratio }}>
+                            <img
+                              src={item.image}
+                              alt={item.title}
+                              className="h-full w-full object-cover transition duration-700 ease-in-out group-hover:scale-[1.03]"
+                              loading="lazy"
+                            />
+
+                            <div className="absolute inset-0 bg-black/0 transition duration-500 ease-in-out group-hover:bg-black/40" />
+
+                            <div className="absolute inset-x-0 top-0 flex translate-y-4 items-start justify-between px-5 pt-5 opacity-0 transition duration-500 ease-in-out group-hover:translate-y-0 group-hover:opacity-100">
+                              <div className="space-y-2">
+                                {item.tags.map((tag) => (
+                                  <div
+                                    key={tag}
+                                    className="w-fit rounded-full bg-white/12 px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-white backdrop-blur-md"
+                                  >
+                                    {tag}
+                                  </div>
+                                ))}
+                              </div>
+
+                              <div className="rounded-full bg-white/12 p-2 text-white backdrop-blur-md">
+                                <ArrowUpRight size={16} strokeWidth={1.8} />
+                              </div>
+                            </div>
+
+                            <div className="absolute inset-x-0 bottom-0 flex translate-y-5 items-end justify-between gap-4 px-5 pb-5 opacity-0 transition duration-500 ease-in-out group-hover:translate-y-0 group-hover:opacity-100">
+                              <div>
+                                <div className="text-[0.68rem] uppercase tracking-[0.28em] text-white/72">AI 色卡</div>
+                                <div className="mt-3 flex items-center gap-2">
+                                  {item.colors.map((color) => (
+                                    <span
+                                      key={color}
+                                      className="h-4 w-4 rounded-full ring-1 ring-white/25"
+                                      style={{ backgroundColor: color }}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+
+                              <div className="rounded-full bg-white/12 px-3 py-1.5 text-[0.68rem] uppercase tracking-[0.18em] text-white backdrop-blur-md">
+                                {item.category}
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="glass-panel rounded-[2rem] px-6 py-14 text-center shadow-soft ring-1 ring-black/5">
+                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-black/5 text-black/70">
+                      <ImagePlus size={20} strokeWidth={1.8} />
+                    </div>
+                    <h2 className="mt-5 font-display text-3xl text-ink">这个分类下还没有内容</h2>
+                    <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-black/58">
+                      你可以切换筛选标签，或者上传新的灵感图片来扩充当前画廊。
+                    </p>
+                  </div>
+                )}
+              </section>
+
+              <footer className="mt-16 border-t border-black/6 pt-8 text-sm text-black/58">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div>网站作者：克里斯提娜（莎莎）</div>
+                  <a
+                    href="https://www.xiaohongshu.com/user/profile/5ac74b7911be102f4be908ea?xsec_token=AB8WLoqOWH9l0aoXcIGARcyMZkmNV2g6fjAJaCvhdp6m0%3D&xsec_source=pc_search"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 text-black transition hover:text-black/70"
+                  >
+                    小红书主页
+                    <ArrowUpRight size={15} strokeWidth={1.8} />
+                  </a>
+                </div>
+              </footer>
+            </main>
+
+            <div className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex flex-col items-center gap-3 px-4">
+              {toasts.map((toast) => (
+                <div
+                  key={toast.id}
+                  className="pointer-events-auto rounded-full bg-ink px-4 py-2 text-sm text-white shadow-panel animate-fadeUp"
+                >
+                  {toast.message}
+                </div>
+              ))}
+            </div>
+
+            {selectedItem && (
+              <div className="backdrop-fade fixed inset-0 z-40 flex items-center justify-center bg-black/50 px-4 py-4 md:px-7">
+                <div className="modal-rise relative flex h-[min(92vh,900px)] w-full max-w-[1380px] overflow-hidden rounded-[2rem] bg-[rgba(249,249,248,0.96)] shadow-panel backdrop-blur-2xl">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedItem(null)}
+                    className="absolute right-4 top-4 z-10 rounded-full bg-white/85 p-2.5 text-black shadow-soft transition duration-300 hover:scale-105"
+                  >
+                    <X size={18} strokeWidth={2} />
+                  </button>
+
+                  <div className="grid h-full w-full md:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.8fr)]">
+                    <div className="relative h-[34vh] overflow-hidden bg-[#efebe6] md:h-full">
+                      <img
+                        src={selectedItem.image}
+                        alt={selectedItem.title}
+                        className="h-full w-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/12 via-transparent to-transparent" />
+                    </div>
+
+                    <div className="overflow-y-auto px-6 py-7 md:px-8 md:py-10">
+                      <div className="flex items-center gap-2 text-[0.72rem] uppercase tracking-[0.28em] text-black/42">
+                        <Sparkles size={14} strokeWidth={1.9} />
+                        视觉资产面板
+                      </div>
+
+                      <div className="mt-6">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="rounded-full bg-black/5 px-3 py-1 text-[0.68rem] uppercase tracking-[0.24em] text-black/52">
+                            {selectedItem.category}
+                          </span>
+                          <span className="rounded-full bg-black/5 px-3 py-1 text-[0.68rem] uppercase tracking-[0.24em] text-black/52">
+                            {selectedItem.scene}
+                          </span>
+                        </div>
+
+                        <h2 className="mt-5 max-w-md font-display text-[2.35rem] leading-[1.02] tracking-[-0.03em] text-ink md:text-[2.8rem]">
+                          {selectedItem.title}
+                        </h2>
+                        <p className="mt-5 text-sm leading-7 text-black/62 md:text-[0.97rem]">
+                          {selectedItem.description}
+                        </p>
+                      </div>
+
+                      <div className="mt-8 space-y-6">
+                        <section className="rounded-[1.6rem] bg-white/60 p-5 shadow-[0_1px_0_rgba(17,17,17,0.04)]">
+                          <div className="text-[0.72rem] uppercase tracking-[0.28em] text-black/40">AI 视觉标签</div>
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            {selectedItem.tags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="rounded-full bg-black/5 px-3 py-2 text-xs tracking-[0.16em] text-black/70"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        </section>
+
+                        <section className="rounded-[1.6rem] bg-white/60 p-5 shadow-[0_1px_0_rgba(17,17,17,0.04)]">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="text-[0.72rem] uppercase tracking-[0.28em] text-black/40">提取色卡</div>
+                            <div className="text-xs text-black/35">点击色块即可复制 HEX</div>
+                          </div>
+
+                          <div className="mt-5 grid gap-3">
+                            {selectedItem.colors.map((color) => {
+                              const copied = copiedColor === color;
+                              return (
+                                <button
+                                  key={color}
+                                  type="button"
+                                  onClick={() => copyText(color)}
+                                  className={`flex items-center justify-between rounded-[1.2rem] bg-paper px-4 py-3 text-left transition duration-300 hover:-translate-y-0.5 hover:bg-white ${
+                                    copied ? "copy-flash ring-1 ring-black/10" : "ring-1 ring-black/5"
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-4">
+                                    <span
+                                      className="h-10 w-10 rounded-xl shadow-[inset_0_0_0_1px_rgba(255,255,255,0.25)]"
+                                      style={{ backgroundColor: color }}
+                                    />
+                                    <span className="font-medium tracking-[0.12em] text-black/78">{color}</span>
+                                  </div>
+                                  <span className="text-black/45">
+                                    {copied ? <Check size={16} strokeWidth={2} /> : <Copy size={16} strokeWidth={1.9} />}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </section>
+
+                        <section className="rounded-[1.6rem] bg-white/60 p-5 shadow-[0_1px_0_rgba(17,17,17,0.04)]">
+                          <div className="grid gap-5 sm:grid-cols-2">
+                            <div>
+                              <div className="text-[0.72rem] uppercase tracking-[0.28em] text-black/40">情绪描述</div>
+                              <p className="mt-3 text-sm leading-6 text-black/62">
+                                {selectedItem.moodDescription || selectedItem.description}
+                              </p>
+                            </div>
+                            <div>
+                              <div className="text-[0.72rem] uppercase tracking-[0.28em] text-black/40">推荐用途</div>
+                              <p className="mt-3 text-sm leading-6 text-black/62">{selectedItem.usage}</p>
+                            </div>
+                          </div>
+                        </section>
+                      </div>
+
+                      <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                        <button
+                          type="button"
+                          onClick={handleRefreshSelected}
+                          disabled={isRefreshingSelected}
+                          className={`inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-medium transition duration-300 ${
+                            isRefreshingSelected
+                              ? "bg-black/10 text-black/45"
+                              : "bg-black/5 text-black/72 hover:bg-black/8"
+                          }`}
+                        >
+                          {isRefreshingSelected ? (
+                            <LoaderCircle size={16} strokeWidth={1.9} className="animate-spin" />
+                          ) : (
+                            <RefreshCcw size={16} strokeWidth={1.9} />
+                          )}
+                          {isRefreshingSelected ? "正在重新分析" : "使用 MiniMax 重新分析"}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleExportBrief(selectedItem)}
+                          className="inline-flex items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 text-sm font-medium text-white transition duration-300 ease-in-out hover:-translate-y-0.5 hover:bg-black hover:shadow-float"
+                        >
+                          <Download size={16} strokeWidth={1.9} />
+                          导出企划简报
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => copyText(selectedItem.tags.join(" "))}
+                          className="inline-flex items-center justify-center gap-2 rounded-full bg-black/5 px-5 py-3 text-sm font-medium text-black/72 transition duration-300 hover:bg-black/8"
+                        >
+                          <Copy size={16} strokeWidth={1.9} />
+                          复制标签
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {uploadOpen && (
+              <div className="backdrop-fade fixed inset-0 z-40 flex items-center justify-center bg-black/45 px-4 py-6 md:px-6">
+                <div className="modal-rise relative w-full max-w-3xl overflow-hidden rounded-[2rem] bg-[rgba(249,249,248,0.96)] shadow-panel backdrop-blur-2xl">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUploadOpen(false);
+                      setUploadDrafts([]);
+                      setDragOver(false);
+                    }}
+                    className="absolute right-4 top-4 z-10 rounded-full bg-white/85 p-2.5 text-black shadow-soft transition duration-300 hover:scale-105"
+                  >
+                    <X size={18} strokeWidth={2} />
+                  </button>
+
+                  <div className="grid gap-6 p-6 md:grid-cols-[minmax(0,1fr)_minmax(290px,0.82fr)] md:p-8">
+                    <div>
+                      <div className="text-[0.72rem] uppercase tracking-[0.28em] text-black/40">上传灵感图</div>
+                      <h2 className="mt-4 font-display text-[2.2rem] leading-[1.02] tracking-[-0.03em] text-ink md:text-[2.75rem]">
+                        把新的灵感图
+                        <br />
+                        放进你的看板。
+                      </h2>
+                      <p className="mt-4 max-w-lg text-sm leading-7 text-black/62">
+                        这里已经接入真实 MiniMax 分析。上传图片后，系统会生成中文视觉标签、情绪描述与色卡结果。
+                      </p>
+
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        onDragOver={(event) => {
+                          event.preventDefault();
+                          setDragOver(true);
+                        }}
+                        onDragLeave={() => setDragOver(false)}
+                        onDrop={(event) => {
+                          event.preventDefault();
+                          setDragOver(false);
+                          pickFiles(event.dataTransfer.files);
+                        }}
+                        className={`mt-8 flex min-h-[280px] w-full flex-col items-center justify-center rounded-[1.8rem] px-6 text-center transition duration-300 ${
+                          dragOver ? "bg-ink text-white shadow-float" : "bg-white/70 text-black/70 ring-1 ring-black/5"
+                        }`}
+                      >
+                        <div className={`rounded-full p-4 ${dragOver ? "bg-white/12" : "bg-black/5"}`}>
+                          <ImagePlus size={26} strokeWidth={1.75} />
+                        </div>
+                        <div className="mt-5 text-base font-medium">把图片拖到这里，或从设备中选择</div>
+                        <div className={`mt-2 max-w-sm text-sm leading-6 ${dragOver ? "text-white/75" : "text-black/48"}`}>
+                          支持 JPG、PNG、WEBP 格式。
+                        </div>
+                        <div
+                          className={`mt-5 rounded-full px-4 py-2 text-xs uppercase tracking-[0.24em] ${
+                            dragOver ? "bg-white/12 text-white" : "bg-black/5 text-black/60"
+                          }`}
+                        >
+                          MiniMax 实时分析
+                        </div>
+                      </button>
+
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={(event) => pickFiles(event.target.files)}
+                        className="hidden"
+                      />
+                    </div>
+
+                    <div className="flex flex-col rounded-[1.8rem] bg-white/60 p-5 shadow-[0_1px_0_rgba(17,17,17,0.04)]">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <div className="text-[0.72rem] uppercase tracking-[0.28em] text-black/40">待处理图片</div>
+                          <div className="mt-2 text-sm text-black/55">
+                            {isAnalyzing && uploadProgressText ? uploadProgressText : `${uploadDrafts.length} 张待分析`}
+                          </div>
+                        </div>
+                        <div className="rounded-full bg-black/5 p-3 text-black/70">
+                          <Sparkles size={18} strokeWidth={1.9} />
+                        </div>
+                      </div>
+
+                      <div className="mt-5 flex-1 space-y-3 overflow-y-auto pr-1">
+                        {uploadDrafts.length ? (
+                          uploadDrafts.map((draft) => (
+                            <div
+                              key={draft.localId}
+                              className="flex items-center gap-4 rounded-[1.3rem] bg-paper p-3 ring-1 ring-black/5"
+                            >
+                              <img
+                                src={draft.preview}
+                                alt={draft.title}
+                                className="h-16 w-16 rounded-[1rem] object-cover"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="truncate text-sm font-medium text-ink">{draft.title}</div>
+                                <div className="mt-1 truncate text-xs uppercase tracking-[0.2em] text-black/36">
+                                  {draft.category}
+                                </div>
+                                <div className="mt-2 flex items-center gap-1.5">
+                                  {draft.colors.map((color) => (
+                                    <span
+                                      key={color}
+                                      className="h-3.5 w-3.5 rounded-full"
+                                      style={{ backgroundColor: color }}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => removeDraft(draft.localId)}
+                                className="rounded-full bg-black/5 p-2 text-black/55 transition hover:bg-black/8"
+                              >
+                                <X size={15} strokeWidth={2} />
+                              </button>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="flex h-full min-h-[220px] items-center justify-center rounded-[1.4rem] border border-dashed border-black/8 bg-paper/60 px-6 text-center text-sm leading-6 text-black/42">
+                            还没有选择图片。上传后即可预览 MiniMax 输出的中文标签、情绪描述和色卡。
+                          </div>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleUploadConfirm}
+                        disabled={isAnalyzing}
+                        className={`mt-5 inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-medium transition duration-300 ${
+                          isAnalyzing
+                            ? "bg-black/10 text-black/45"
+                            : "bg-ink text-white hover:-translate-y-0.5 hover:bg-black hover:shadow-float"
+                        }`}
+                      >
+                        <Upload size={16} strokeWidth={1.9} />
+                        {isAnalyzing ? "正在分析视觉内容..." : "加入画廊"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+    </script>
+  </body>
+</html>
