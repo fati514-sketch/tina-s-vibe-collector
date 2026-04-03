@@ -59,13 +59,14 @@ npm run dev
 http://127.0.0.1:4173
 ```
 
-## 3. Vercel 部署教程
+## 3. Netlify 部署教程
 
-这个项目已经整理成可直接部署到 Vercel 的结构：
+这个项目已经整理成可直接部署到 Netlify 的结构：
 
 - 首页是根目录的 `index.html`
-- 服务端接口是 `api/health.mjs` 和 `api/analyze.mjs`
-- MiniMax Key 不写死在前端，走 Vercel 服务端环境变量
+- 服务端接口逻辑在 `api/health.mjs` 和 `api/analyze.mjs`
+- Netlify 入口函数在 `netlify/functions/health.mjs` 和 `netlify/functions/analyze.mjs`
+- `netlify.toml` 已经把 `/api/health` 和 `/api/analyze` 重写到 Netlify Functions
 
 ### 第一步：上传到 GitHub
 
@@ -77,49 +78,52 @@ npm run check:github
 
 确认通过后，再把项目推到 GitHub。
 
-### 第二步：在 Vercel 导入仓库
+### 第二步：在 Netlify 导入仓库
 
-1. 打开 Vercel 控制台
-2. 点击 `Add New...`
-3. 选择 `Project`
-4. 选择你的 GitHub 仓库
-5. 点击 `Import`
+1. 打开 Netlify 控制台
+2. 点击 `Add new site`
+3. 选择 `Import an existing project`
+4. 选择 `GitHub`
+5. 授权 Netlify 访问你的仓库
+6. 选择你刚上传的项目仓库
 
-### 第三步：配置环境变量
+### 第三步：构建设置怎么填
 
-在 Vercel 项目的环境变量里添加这 3 个值：
+这个项目已经带有 `netlify.toml`，大多数设置会自动识别。
 
-- `MINIMAX_API_KEY`：填你的真实 MiniMax Key
+如果 Netlify 页面需要你手动确认，按下面填写：
+
+- Base directory：留空
+- Build command：留空
+- Publish directory：留空
+- Functions directory：留空
+
+说明：
+
+- `netlify.toml` 已经指定了 functions 目录
+- 首页文件就是根目录的 `index.html`
+
+### 第四步：配置环境变量
+
+在 Netlify 后台添加这 3 个环境变量：
+
+- `MINIMAX_API_KEY`：你的真实 MiniMax Key
 - `MINIMAX_MODEL`：`MiniMax-Text-01`
 - `MINIMAX_ENDPOINT`：`https://api.minimaxi.com/v1/text/chatcompletion_v2`
 
-建议添加到：
+### 第五步：点击部署
 
-- `Production`
-- `Preview`
-- `Development`
+点击 `Deploy site`，等待部署完成。
 
-### 第四步：直接部署
+### 第六步：部署后验证
 
-这个项目不需要额外改构建命令，直接部署即可。
-
-如果 Vercel 让你填写，可以这样设置：
-
-- Build Command：留空
-- Output Directory：留空
-- Install Command：留空
-
-然后点击 `Deploy`。
-
-### 第五步：部署后验证
-
-部署完成后，先打开：
+先打开：
 
 ```bash
 https://你的域名/api/health
 ```
 
-如果看到：
+如果返回里有：
 
 ```json
 {
@@ -128,33 +132,17 @@ https://你的域名/api/health
 }
 ```
 
-说明你的环境变量已经生效。
+说明环境变量和函数都已经生效。
 
-接着再打开首页，上传一张图片测试。
+然后再打开首页，上传一张图片测试 MiniMax 是否正常返回中文分析。
 
-### 第六步：以后如何更新
+### 第七步：以后怎么更新
 
 以后你只需要：
 
-1. 修改本地代码
+1. 本地改代码
 2. 推送到 GitHub
-3. Vercel 会自动重新部署
-
-### 可选：用 Vercel CLI 本地联调
-
-如果你想完全模拟线上环境，可以安装并登录 Vercel CLI：
-
-```bash
-npm i -g vercel
-vercel login
-vercel
-```
-
-如果已经绑过项目，后续可以用：
-
-```bash
-vercel --prod
-```
+3. Netlify 会自动重新部署
 
 ## 4. 仓库建议上传这些文件
 
@@ -163,6 +151,9 @@ vercel --prod
 - `minimax-client.mjs`
 - `api/health.mjs`
 - `api/analyze.mjs`
+- `netlify.toml`
+- `netlify/functions/health.mjs`
+- `netlify/functions/analyze.mjs`
 - `vercel.json`
 - `package.json`
 - `.gitignore`
